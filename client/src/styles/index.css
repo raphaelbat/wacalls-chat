@@ -1,0 +1,253 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+ --background: 220 20% 96%;
+  --foreground: 240 10% 3.9%;
+ --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 152 60% 40%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+ --muted: 220 14% 92%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 152 45% 94%;
+  --accent-foreground: 152 45% 20%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+ --border: 220 13% 87%;
+  --input: 240 5.9% 90%;
+  --ring: 152 60% 40%;
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
+  --card: 240 9% 7%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 9% 7%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 152 52% 46%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 152 28% 18%;
+  --accent-foreground: 152 40% 85%;
+  --destructive: 0 62% 47%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 18%;
+  --ring: 152 52% 46%;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* ------------------------------------------------------------------
+ * Auth screens (login / signup) — dark split-layout, orange accent.
+ * Scoped under .auth-shell so it does not leak into the rest of the app.
+ * ------------------------------------------------------------------ */
+.auth-shell {
+  /* Tokens do auth herdam o tema atual (claro/escuro) para que os campos
+   * de input nunca fiquem brancos sobre branco nem escuros sobre escuro. */
+  --auth-surface: var(--input);
+  --auth-border: var(--border);
+  --auth-text: var(--foreground);
+  --auth-muted: var(--muted-foreground);
+  --auth-subtle: var(--muted-foreground);
+  --auth-accent: 22 100% 52%;
+  --auth-accent-hover: 22 100% 46%;
+  --auth-accent-foreground: 0 0% 100%;
+  color: hsl(var(--auth-text));
+}
+.auth-eyebrow {
+  color: hsl(var(--auth-subtle));
+  letter-spacing: 0.18em;
+}
+.auth-headline-accent {
+  color: hsl(var(--auth-accent));
+}
+.auth-muted {
+  color: hsl(var(--auth-muted));
+}
+.auth-input {
+  background-color: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  border-radius: 10px;
+}
+.auth-input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+.auth-input:focus {
+  outline: none;
+  border-color: hsl(var(--auth-accent));
+  box-shadow: 0 0 0 3px hsl(var(--auth-accent) / 0.18);
+}
+/* Corrige autofill do Chrome que pinta o input de branco/amarelo e some
+ * com o texto digitado. Mantém o esquema de cores conforme o tema atual. */
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  -webkit-box-shadow: 0 0 0 1000px hsl(var(--card)) inset !important;
+  caret-color: hsl(var(--foreground));
+  transition: background-color 99999s ease-out 0s;
+}
+.auth-cta {
+  background-color: hsl(var(--auth-accent));
+  color: hsl(var(--auth-accent-foreground));
+  border-radius: 10px;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+.auth-cta:hover:not(:disabled) {
+  background-color: hsl(var(--auth-accent-hover));
+}
+.auth-cta:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.auth-link {
+  color: hsl(var(--auth-accent));
+}
+.auth-link:hover {
+  text-decoration: underline;
+}
+.auth-divider {
+  background-color: hsl(var(--auth-border));
+}
+
+/* Discreet, slim scrollbar used on chat lists and message panels. */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.25);
+  border-radius: 999px;
+}
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.4);
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.55);
+}
+.scrollbar-thin::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/*
+ * Chat doodle background
+ * Subtle hand-drawn pattern (chat bubbles, phone, star, heart, sparkle,
+ * paper plane, headset). Uses two encoded SVGs so the stroke contrast is
+ * tuned per theme — soft on light, faint glow on dark.
+ */
+.chat-doodle-bg {
+  background-color: #ece5dd;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220' fill='none' stroke='%230f172a' stroke-opacity='0.13' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'><path d='M22 30h34a6 6 0 0 1 6 6v18a6 6 0 0 1-6 6H40l-8 8v-8h-10a6 6 0 0 1-6-6V36a6 6 0 0 1 6-6z'/><path d='M150 22c8 0 14 6 14 14v8c0 4-2 6-5 7l-4 1c-2 4-6 8-10 10l-1 4c-1 3-3 5-7 5h-8c-8 0-14-6-14-14 0-19 16-35 35-35z'/><circle cx='95' cy='40' r='4'/><path d='M88 36l-4-4M102 36l4-4M95 28v-5'/><path d='M180 70l8 4-8 4 8 4-8 4'/><path d='M40 110l5-3 5 3-2-5 4-4-6-1-2-6-2 6-6 1 4 4z'/><path d='M118 96c-6-6-16-2-16 6 0 8 16 18 16 18s16-10 16-18c0-8-10-12-16-6z'/><path d='M70 160l40-16-10 14 14-2-30 28z'/><circle cx='175' cy='150' r='14'/><path d='M161 150v-4a14 14 0 0 1 28 0v4M165 160v6a4 4 0 0 0 4 4h2M185 160v6a4 4 0 0 1-4 4h-2'/><circle cx='30' cy='185' r='3'/><circle cx='205' cy='30' r='3'/><circle cx='200' cy='200' r='2'/><circle cx='130' cy='180' r='2'/><path d='M55 90l3 3M52 93l3-3'/><path d='M195 110l3 3M192 113l3-3'/></svg>");
+  background-repeat: repeat;
+  background-size: 220px 220px;
+}
+.dark .chat-doodle-bg {
+  background-color: hsl(var(--muted) / 0.25);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220' fill='none' stroke='%23ffffff' stroke-opacity='0.05' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'><path d='M22 30h34a6 6 0 0 1 6 6v18a6 6 0 0 1-6 6H40l-8 8v-8h-10a6 6 0 0 1-6-6V36a6 6 0 0 1 6-6z'/><path d='M150 22c8 0 14 6 14 14v8c0 4-2 6-5 7l-4 1c-2 4-6 8-10 10l-1 4c-1 3-3 5-7 5h-8c-8 0-14-6-14-14 0-19 16-35 35-35z'/><circle cx='95' cy='40' r='4'/><path d='M88 36l-4-4M102 36l4-4M95 28v-5'/><path d='M180 70l8 4-8 4 8 4-8 4'/><path d='M40 110l5-3 5 3-2-5 4-4-6-1-2-6-2 6-6 1 4 4z'/><path d='M118 96c-6-6-16-2-16 6 0 8 16 18 16 18s16-10 16-18c0-8-10-12-16-6z'/><path d='M70 160l40-16-10 14 14-2-30 28z'/><circle cx='175' cy='150' r='14'/><path d='M161 150v-4a14 14 0 0 1 28 0v4M165 160v6a4 4 0 0 0 4 4h2M185 160v6a4 4 0 0 1-4 4h-2'/><circle cx='30' cy='185' r='3'/><circle cx='205' cy='30' r='3'/><circle cx='200' cy='200' r='2'/><circle cx='130' cy='180' r='2'/><path d='M55 90l3 3M52 93l3-3'/><path d='M195 110l3 3M192 113l3-3'/></svg>");
+}
+
+/* Splash — telefone tocando (suave) */
+@keyframes splash-shake {
+  0%, 55%, 100% { transform: rotate(0deg); }
+  8%  { transform: rotate(-10deg); }
+  16% { transform: rotate(8deg); }
+  24% { transform: rotate(-6deg); }
+  32% { transform: rotate(4deg); }
+  40% { transform: rotate(-2deg); }
+  48% { transform: rotate(0deg); }
+}
+@keyframes splash-wave {
+  0%   { transform: scale(0.85); opacity: 0.5; }
+  80%  { opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.splash-ring__stage { isolation: isolate; }
+.splash-ring__badge { z-index: 1; }
+.splash-ring__icon {
+  transform-origin: 50% 50%;
+  animation: splash-shake 1.8s ease-in-out infinite;
+  will-change: transform;
+}
+.splash-ring__wave {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid hsl(var(--primary) / 0.4);
+  animation: splash-wave 1.8s ease-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+.splash-ring__wave--delay { animation-delay: 0.9s; }
+
+/* Subtle, themed scrollbar used inside kanban columns and panels */
+.scrollbar-soft {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+}
+.scrollbar-soft::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-soft::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-soft::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.25);
+  border-radius: 9999px;
+}
+.scrollbar-soft::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.45);
+}

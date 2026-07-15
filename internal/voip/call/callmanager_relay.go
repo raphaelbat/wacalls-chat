@@ -1,0 +1,126 @@
+package call
+
+import (
+	"wacalls/internal/voip/core"
+	"wacalls/internal/voip/transport"
+)
+
+type RelayTransport interface {
+	SetSsrc(ssrc uint32)
+	SetSubscriptionSsrc(ssrc uint32)
+	SetStreamSsrcs(selfSsrcs, peerSsrcs []uint32)
+	SetOnConnected(fn func(ip string, port int))
+	SetOnReceive(fn func(data []byte))
+	ResendSubscriptions()
+	ConfigureRelays(relays []transport.RelayConfig)
+	Broadcast(data []byte)
+	BufferedAmount() uint64
+	HasConnection() bool
+	ConnectedCount() int
+	Cleanup()
+}
+
+var _ RelayTransport = (*transport.SctpRelayManager)(nil)
+
+func (m *CallManager) onRelayConnected() {
+	m.mu.Lock()
+	call := m.currentCall
+	if call != nil && call.StateData.State == core.CallStateConnecting {
+		if err := call.ApplyTransition(Transition{Type: TransitionMediaConnected}); err == nil {
+			m.emitState()
+			m.startMediaSendLoopLocked()
+			m.log.Info("relay connected → active", "call_id", call.CallID)
+		}
+	}
+	m.mu.Unlock()
+}
+
+// MediaReady reports whether the WhatsApp relay is connected and the SRTP
+// encoder is ready to send audio frames. Flow/TTS playback uses this to avoid
+// speaking the URA before the media path exists.
+func (m *CallManager) MediaReady() bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.codec != nil && m.rtpSession != nil && m.srtpSession != nil && m.relay != nil && m.relay.HasConnection()
+}
+
+func buildRelayConfigs(endpoints []core.RelayEndpoint) []transport.RelayConfig {
+	seen := map[string]bool{}
+	var relays []transport.RelayConfig
+	for _, ep := range endpoints {
+		if ep.Protocol != 0 {
+			continue
+		}
+		if ep.Key == "" || ep.RawToken == nil {
+			continue
+		}
+		port := ep.Port
+		if port == 0 {
+			port = core.WARelayPort
+		}
+		key := ep.IP
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		name := ep.RelayName
+		if name == "" {
+			name = ep.IP
+		}
+		relays = append(relays, transport.RelayConfig{
+			IP: ep.IP, Port: port, Token: ep.Token, AuthToken: ep.AuthToken,
+			RawAuthToken: ep.RawAuthToken, RawToken: ep.RawToken, Key: ep.Key,
+			RelayID: ep.RelayID, Name: name, AuthTokenID: ep.AuthTokenID,
+		})
+	}
+	return relays
+}
+
+func (m *CallManager) connectRelays(endpoints []core.RelayEndpoint) {
+	relays := buildRelayConfigs(endpoints)
+	if len(relays) == 0 {
+		m.log.Error("no usable relay configs")
+		return
+	}
+	m.mu.Lock()
+	m.relay.SetSsrc(m.selfSsrc)
+	m.relay.SetSubscriptionSsrc(firstSsrc(m.peerSsrcs))
+	m.mu.Unlock()
+	m.relay.ConfigureRelays(relays)
+	m.log.Info("relay configured", "connected", m.relay.ConnectedCount())
+}
+
+func (m *CallManager) cleanupMedia() {
+	m.mu.Lock()
+	codec := m.codec
+	m.codec = nil
+	if m.sendLoopStop != nil {
+		close(m.sendLoopStop)
+		m.sendLoopStop = nil
+	}
+	m.rtpSession = nil
+	m.srtpSession = nil
+	m.videoRtpSession = nil
+	m.videoSrtpSession = nil
+	m.videoSelfSsrc = 0
+	m.videoDepacketizer = nil
+	m.videoFrameBuf = nil
+	m.firstPacketSent = false
+	m.initialTransportSent = false
+	m.outgoingPreacceptSent = false
+	m.remotePreaccepted = false
+	m.actualPeerSet = false
+	if m.captureRing != nil {
+		// Drop queued samples but keep the backing array so the next call
+		// reuses it (zero alloc on reconnect).
+		m.captureRing.Reset()
+	}
+	m.audioTimelineSet = false
+	m.audioPlayedSamples = 0
+	m.mu.Unlock()
+
+	m.relay.Cleanup()
+	if codec != nil {
+		codec.Close()
+	}
+}
