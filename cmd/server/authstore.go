@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -92,6 +94,10 @@ func newAuthStore(ctx context.Context, db *sql.DB) (*authStore, error) {
 		`ALTER TABLE users ADD COLUMN parent_id TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE users ADD COLUMN google_sub TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE users ADD COLUMN display_name TEXT NOT NULL DEFAULT ''`,
+		// Quem esta logado, de onde e desde quando.
+		`ALTER TABLE auth_tokens ADD COLUMN user_agent TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE auth_tokens ADD COLUMN ip TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE auth_tokens ADD COLUMN last_seen INTEGER NOT NULL DEFAULT 0`,
 	}
 	for _, q := range migrations {
 		_, _ = db.ExecContext(ctx, q)
@@ -271,21 +277,50 @@ func (s *authStore) Login(ctx context.Context, email, password string) (UserRow,
 	return u, token, nil
 }
 
+// maxSessoesPorUsuario e quantos acessos simultaneos o mesmo usuario pode ter.
+// O padrao e 1: entrar em outro navegador derruba o anterior, que e o que
+// impede a senha de circular pela empresa inteira.
+//
+// Abrir OUTRA ABA do mesmo navegador nao gasta sessao: a aba reaproveita o
+// cookie e nem passa pela tela de login. Era esse caso que antes derrubava a
+// primeira aba e fazia piscar "voce entrou em outro navegador".
+//
+// WACALLS_MAX_SESSOES=3 (por exemplo) libera PC + celular ao mesmo tempo.
+func maxSessoesPorUsuario() int {
+	if v := strings.TrimSpace(os.Getenv("WACALLS_MAX_SESSOES")); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return 1
+}
+
 func (s *authStore) IssueToken(ctx context.Context, userID string) (string, error) {
-	// Single-session policy: invalidate any existing tokens for this user
-	// before issuing a new one. We capture the previous tokens first so the
-	// SSE hub can push a "revoked" event to any open browser in real time.
+	// Guarda so as sessoes que excedem o limite (da mais antiga em diante),
+	// para o hub SSE avisar quem realmente foi derrubado.
 	var prev []string
-	if rows, err := s.db.QueryContext(ctx, `SELECT token FROM auth_tokens WHERE user_id = ?`, userID); err == nil {
+	if rows, err := s.db.QueryContext(ctx,
+		`SELECT token FROM auth_tokens WHERE user_id = ? ORDER BY created_at DESC, rowid DESC`, userID); err == nil {
+		var todas []string
 		for rows.Next() {
 			var t string
 			if err := rows.Scan(&t); err == nil {
-				prev = append(prev, t)
+				todas = append(todas, t)
 			}
 		}
 		rows.Close()
+		// O token novo tambem ocupa uma vaga: mantem os (limite - 1) mais recentes.
+		limite := maxSessoesPorUsuario() - 1
+		if len(todas) > limite {
+			prev = todas[limite:]
+		}
 	}
-	_, _ = s.db.ExecContext(ctx, `DELETE FROM auth_tokens WHERE user_id = ?`, userID)
+	for _, t := range prev {
+		_, _ = s.db.ExecContext(ctx, `DELETE FROM auth_tokens WHERE token = ?`, t)
+	}
+	// Limpeza de rotina: sessao vencida nao ocupa vaga.
+	_, _ = s.db.ExecContext(ctx, `DELETE FROM auth_tokens WHERE user_id = ? AND expires_at < ?`,
+		userID, time.Now().Unix())
 	tok := newToken()
 	now := time.Now()
 	_, err := s.db.ExecContext(ctx, `INSERT INTO auth_tokens (token, user_id, created_at, expires_at) VALUES (?,?,?,?)`,
@@ -841,4 +876,95 @@ func (s *authStore) SetUserSessions(ctx context.Context, userID string, sessionI
 		}
 	}
 	return tx.Commit()
+}
+
+// ---------------------------------------------------------------------------
+// Quem esta logado
+// ---------------------------------------------------------------------------
+
+// LoginRow e uma sessao aberta: um navegador, em um aparelho, desde tal hora.
+type LoginRow struct {
+	Token     string `json:"token"` // so os 8 primeiros caracteres saem daqui
+	UserID    string `json:"userId"`
+	Email     string `json:"email"`
+	Nome      string `json:"nome"`
+	Navegador string `json:"navegador"`
+	IP        string `json:"ip"`
+	Desde     int64  `json:"desde"`
+	Visto     int64  `json:"visto"`
+	Atual     bool   `json:"atual"`
+}
+
+// MarcarAcesso grava de onde veio o login. Chamado logo depois de emitir o token.
+func (s *authStore) MarcarAcesso(ctx context.Context, token, userAgent, ip string) {
+	agora := time.Now().Unix()
+	_, _ = s.db.ExecContext(ctx,
+		`UPDATE auth_tokens SET user_agent = ?, ip = ?, last_seen = ? WHERE token = ?`,
+		userAgent, ip, agora, token)
+}
+
+// TocarAcesso atualiza o "visto por ultimo". So grava a cada minuto: e uma
+// escrita por requisicao autenticada, e o painel faz muitas.
+func (s *authStore) TocarAcesso(ctx context.Context, token string) {
+	agora := time.Now().Unix()
+	_, _ = s.db.ExecContext(ctx,
+		`UPDATE auth_tokens SET last_seen = ? WHERE token = ? AND last_seen < ?`,
+		agora, token, agora-60)
+}
+
+// ListarAcessos devolve as sessoes abertas. userID vazio = todos (visao do admin).
+func (s *authStore) ListarAcessos(ctx context.Context, userID string) ([]LoginRow, error) {
+	q := `SELECT t.token, t.user_id, u.email, COALESCE(u.display_name,''), COALESCE(t.user_agent,''),
+	             COALESCE(t.ip,''), t.created_at, COALESCE(t.last_seen,0)
+	        FROM auth_tokens t JOIN users u ON u.id = t.user_id
+	       WHERE t.expires_at > ?`
+	args := []any{time.Now().Unix()}
+	if userID != "" {
+		q += ` AND t.user_id = ?`
+		args = append(args, userID)
+	}
+	q += ` ORDER BY COALESCE(t.last_seen,0) DESC, t.created_at DESC`
+	rows, err := s.db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []LoginRow{}
+	for rows.Next() {
+		var l LoginRow
+		if err := rows.Scan(&l.Token, &l.UserID, &l.Email, &l.Nome, &l.Navegador, &l.IP, &l.Desde, &l.Visto); err != nil {
+			return nil, err
+		}
+		out = append(out, l)
+	}
+	return out, rows.Err()
+}
+
+// EncerrarAcesso derruba uma sessao pelo inicio do token (o que a tela mostra).
+// Devolve o token inteiro para o hub SSE avisar o navegador na hora.
+func (s *authStore) EncerrarAcesso(ctx context.Context, prefixo, donoID string) (string, error) {
+	prefixo = strings.TrimSpace(prefixo)
+	if len(prefixo) < 8 {
+		return "", errors.New("identificador de sessao invalido")
+	}
+	q := `SELECT token FROM auth_tokens WHERE token LIKE ?`
+	args := []any{prefixo + "%"}
+	if donoID != "" {
+		q += ` AND user_id = ?`
+		args = append(args, donoID)
+	}
+	var token string
+	if err := s.db.QueryRowContext(ctx, q, args...).Scan(&token); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrUserNotFound
+		}
+		return "", err
+	}
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM auth_tokens WHERE token = ?`, token); err != nil {
+		return "", err
+	}
+	if s.OnTokensRevoked != nil {
+		go s.OnTokensRevoked([]string{token})
+	}
+	return token, nil
 }

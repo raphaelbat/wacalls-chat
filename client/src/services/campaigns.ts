@@ -35,6 +35,9 @@ export interface Campaign {
 
   warmup: boolean;
 
+  /** Agendamento: epoch em segundos. 0 = começa assim que for iniciada. */
+  startAt: number;
+
   createdAt: number;
   updatedAt: number;
   startedAt: number;

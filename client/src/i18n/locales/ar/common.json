@@ -25,7 +25,15 @@
     "openMenu": "فتح القائمة",
     "cartRecovery": "RecuperaPay",
     "features": "الميزات",
-    "help": "مساعدة"
+    "help": "مساعدة",
+    "whitelabel": "العلامة البيضاء",
+    "emailSettings": "البريد / SMTP",
+    "profile": "الملف الشخصي",
+    "userSettings": "الإعدادات",
+    "companies": "الشركات",
+    "api": "واجهة API",
+    "principal": "الرئيسية",
+    "apps": "التطبيقات"
   },
   "header": {
     "openDialer": "فتح لوحة الاتصال",
@@ -187,7 +195,8 @@
       "deleteTitle": "حذف الحساب؟",
       "deleteDescription": "{{name}} سيتم فصله وحذفه.",
       "connectedSince": "متصل منذ {{date}} {{time}}",
-      "restartingToast": "جارٍ إعادة تشغيل الحساب…"
+      "restartingToast": "جارٍ إعادة تشغيل الحساب…",
+      "openHealth": "فحص سلامة الحساب"
     },
     "campaigns": {
       "breadcrumb": "الحملات",
@@ -420,23 +429,17 @@
     },
     "tags": {
       "title": "الوسوم",
-      "subtitle": "أنشئ وسوماً لتصنيف التذاكر وجهات الاتصال والمحادثات.",
-      "nameLabel": "اسم الوسم",
-      "namePh": "مثال: VIP, عميل محتمل",
-      "register": "تسجيل",
-      "newTag": "وسم جديد",
-      "alreadyExists": "موجود بالفعل",
-      "useAsBase": "استخدم هذا الوسم كقاعدة",
-      "duplicateChoose": "موجود بالفعل — اختر اسمًا آخر.",
-      "duplicateToast": "يوجد وسم باسم \"{{name}}\" بالفعل.",
-      "createdToast": "تم إنشاء الوسم",
-      "empty": "لا توجد وسوم بعد.",
-      "colCor": "اللون",
-      "colName": "الاسم",
-      "colPreview": "معاينة",
-      "colActions": "إجراءات",
-      "deleteTitle": "حذف الوسم؟",
-      "deleteDescription": "سيتم حذف الوسم \"{{name}}\"."
+      "subtitle": "وسوم ملوّنة لتمييز المحادثات. ما تنشئه هنا يظهر في المحادثة وفي الحملات.",
+      "name": "اسم الوسم",
+      "placeholder": "مثال: عرض سعر، VIP، بلا رد",
+      "create": "إنشاء وسم",
+      "color": "اللون",
+      "created": "تم إنشاء الوسم",
+      "deleted": "تم حذف الوسم",
+      "duplicate": "يوجد وسم بهذا الاسم بالفعل.",
+      "empty": "لا توجد وسوم بعد. أنشئ الأول من الأعلى.",
+      "confirmTitle": "حذف هذا الوسم؟",
+      "confirmBody": "سيُزال من كل المحادثات التي كان يميّزها. المحادثات تبقى كما هي."
     },
     "settings": {
       "noAccess": "وصول مقيد"

@@ -102,6 +102,9 @@ func (s *server) resolveUser(r *http.Request) *currentUser {
 	if err != nil {
 		return nil
 	}
+	// Marca "visto por ultimo" para a tela de acessos saber quem ainda esta la.
+	// A propria consulta so grava uma vez por minuto.
+	s.auth.TocarAcesso(r.Context(), c.Value)
 	return &currentUser{
 		ID:               u.ID,
 		Email:            u.Email,

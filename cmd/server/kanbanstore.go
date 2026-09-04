@@ -128,6 +128,22 @@ func newKanbanStore(ctx context.Context, db *sql.DB) (*kanbanStore, error) {
 	// Best-effort additive migration: add stage_type to existing installs.
 	_, _ = db.ExecContext(ctx, `ALTER TABLE kanban_columns ADD COLUMN stage_type TEXT NOT NULL DEFAULT 'open'`)
 	_, _ = db.ExecContext(ctx, `ALTER TABLE kanban_columns ADD COLUMN sla_hours INTEGER NOT NULL DEFAULT 0`)
+
+	// Limpeza dos cartoes que a versao anterior duplicou: a mesma conversa
+	// entrava varias vezes no mesmo quadro. Fica o mais recente (que e o que o
+	// usuario andou mexendo); os outros vao embora.
+	_, _ = db.ExecContext(ctx, `
+		DELETE FROM kanban_cards
+		 WHERE chat_jid <> ''
+		   AND id NOT IN (
+		     SELECT id FROM kanban_cards c
+		      WHERE c.chat_jid <> ''
+		        AND c.updated_at = (SELECT MAX(x.updated_at) FROM kanban_cards x
+		                             WHERE x.board_id = c.board_id AND x.chat_jid = c.chat_jid)
+		        AND c.rowid = (SELECT MAX(y.rowid) FROM kanban_cards y
+		                        WHERE y.board_id = c.board_id AND y.chat_jid = c.chat_jid
+		                          AND y.updated_at = c.updated_at)
+		   )`)
 	return &kanbanStore{db: db}, nil
 }
 
@@ -374,6 +390,27 @@ type cardCreate struct {
 	DueAt                                        int64
 }
 
+// CardByChatOnBoard acha o cartao que ja representa esta conversa neste quadro.
+// Um atendimento pode aparecer em quadros diferentes (Vendas e Suporte, por
+// exemplo), mas duas vezes no MESMO quadro e sempre engano.
+func (s *kanbanStore) CardByChatOnBoard(ctx context.Context, boardID, sessionID, chatJID string) (kanbanCard, bool) {
+	if boardID == "" || chatJID == "" {
+		return kanbanCard{}, false
+	}
+	row := s.db.QueryRowContext(ctx,
+		`SELECT id,board_id,column_id,title,description,color,position,session_id,chat_jid,assignee_id,due_at,created_at,updated_at
+		   FROM kanban_cards
+		  WHERE board_id = ? AND chat_jid = ? AND (session_id = ? OR ? = '' OR session_id = '')
+		  ORDER BY updated_at DESC LIMIT 1`,
+		boardID, chatJID, sessionID, sessionID)
+	var c kanbanCard
+	if err := row.Scan(&c.ID, &c.BoardID, &c.ColumnID, &c.Title, &c.Description, &c.Color, &c.Position,
+		&c.SessionID, &c.ChatJID, &c.AssigneeID, &c.DueAt, &c.CreatedAt, &c.UpdatedAt); err != nil {
+		return kanbanCard{}, false
+	}
+	return c, true
+}
+
 func (s *kanbanStore) CreateCard(ctx context.Context, in cardCreate) (kanbanCard, error) {
 	in.Title = strings.TrimSpace(in.Title)
 	if in.Title == "" {
@@ -381,6 +418,12 @@ func (s *kanbanStore) CreateCard(ctx context.Context, in cardCreate) (kanbanCard
 	}
 	if in.ColumnID == "" || in.BoardID == "" {
 		return kanbanCard{}, errors.New("board and column required")
+	}
+	// Vincular a mesma conversa duas vezes ao mesmo quadro devolve o cartao que
+	// ja existe, em vez de empilhar copias. Era o que enchia a coluna de cartoes
+	// iguais e o cabecalho do atendimento de selos repetidos.
+	if existente, ok := s.CardByChatOnBoard(ctx, in.BoardID, in.SessionID, in.ChatJID); ok {
+		return existente, nil
 	}
 	var pos int
 	_ = s.db.QueryRowContext(ctx, `SELECT COALESCE(MAX(position),-1)+1 FROM kanban_cards WHERE column_id = ?`, in.ColumnID).Scan(&pos)

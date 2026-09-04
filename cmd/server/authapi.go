@@ -73,6 +73,9 @@ func (s *server) registerAuthRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/auth/logout", s.handleLogout)
 	mux.HandleFunc("GET /api/auth/me", s.handleMe)
 	mux.HandleFunc("GET /api/auth/stream", s.handleAuthStream)
+	// Quem esta logado agora. Atendente ve os proprios acessos; admin ve todos.
+	mux.HandleFunc("GET /api/auth/acessos", s.requireAuth(s.handleListarAcessos))
+	mux.HandleFunc("DELETE /api/auth/acessos/{token}", s.requireAuth(s.handleEncerrarAcesso))
 	mux.HandleFunc("GET /api/me/signature", s.requireAuth(s.handleGetSignature))
 	mux.HandleFunc("PUT /api/me/signature", s.requireAuth(s.handleSetSignature))
 	mux.HandleFunc("PUT /api/me/email", s.requireAuth(s.handleUpdateEmail))
@@ -180,6 +183,7 @@ func (s *server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.loginLimit.reset(clientIP(r))
+	s.auth.MarcarAcesso(r.Context(), token, r.UserAgent(), clientIP(r))
 	setAuthCookie(w, r, token)
 	writeJSON(w, http.StatusOK, map[string]any{"user": u})
 }
@@ -780,6 +784,58 @@ func (s *server) handleDeleteAvatar(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.auth.UpdateAvatar(r.Context(), u.ID, ""); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// ---------------------------------------------------------------------------
+// Acessos abertos (quem esta logado)
+// ---------------------------------------------------------------------------
+
+func (s *server) handleListarAcessos(w http.ResponseWriter, r *http.Request) {
+	u := currentUserFromReq(r)
+	if u == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+	// Atendente so enxerga os proprios acessos.
+	dono := u.ID
+	if u.IsAdmin() {
+		dono = ""
+	}
+	lista, err := s.auth.ListarAcessos(r.Context(), dono)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	atual := ""
+	if c, err := r.Cookie(authCookieName); err == nil {
+		atual = c.Value
+	}
+	// O token inteiro nunca sai daqui: com ele, quem lesse a resposta entraria
+	// na conta. Vai so o inicio, que ja identifica a linha na tela.
+	for i := range lista {
+		lista[i].Atual = lista[i].Token == atual
+		if len(lista[i].Token) > 8 {
+			lista[i].Token = lista[i].Token[:8]
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"acessos": lista})
+}
+
+func (s *server) handleEncerrarAcesso(w http.ResponseWriter, r *http.Request) {
+	u := currentUserFromReq(r)
+	if u == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return
+	}
+	dono := u.ID
+	if u.IsAdmin() {
+		dono = ""
+	}
+	if _, err := s.auth.EncerrarAcesso(r.Context(), r.PathValue("token"), dono); err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "sessao nao encontrada"})
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

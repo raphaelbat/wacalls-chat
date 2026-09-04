@@ -58,21 +58,39 @@ export const ChatsPage = () => {
     if (firstPaired) setPickedSession(firstPaired.id);
   }, [activeId, sessions, pickedSession]);
 
-  // Deep-link entry point: /chats?sid=...&jid=... opens that conversation
-  // directly (used by the dedicated /contacts page). The params are consumed
-  // once and then cleared so refreshes don't re-fire the navigation.
+  // Deep-link: /chats?sid=...&jid=... abre aquela conversa. Chega da tela de
+  // Contatos e do cartao do Kanban.
+  //
+  // Duas coisas que estavam erradas aqui e faziam o cartao do Kanban "nao ir
+  // para o atendimento vinculado":
+  //  - o efeito rodava so na montagem, entao clicar num segundo cartao com a
+  //    tela de Chats ja aberta nao fazia nada;
+  //  - exigia sid E jid juntos; cartao antigo (ou criado por automacao) vem so
+  //    com o jid, e a navegacao caia no vazio.
   useEffect(() => {
     const sid = searchParams.get("sid");
     const jid = searchParams.get("jid");
     if (!sid && !jid) return;
-    if (sid) setPickedSession(sid);
-    if (sid && jid) setActiveChat(sid, jid);
+
+    // Sem a conexao no link, procura em qual delas essa conversa existe.
+    const chatsPorSessao = useChats.getState().chatsBySession;
+    const alvo =
+      sid ||
+      Object.keys(chatsPorSessao).find((s) => (chatsPorSessao[s] ?? []).some((c) => c.jid === jid)) ||
+      pickedSession ||
+      activeId ||
+      sessions.find((s) => s.paired)?.id ||
+      "";
+
+    if (alvo) setPickedSession(alvo);
+    if (alvo && jid) setActiveChat(alvo, jid);
+
     const next = new URLSearchParams(searchParams);
     next.delete("sid");
     next.delete("jid");
     setSearchParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   const sessionId =
     pickedSession ?? activeId ?? sessions.find((s) => s.paired)?.id ?? null;

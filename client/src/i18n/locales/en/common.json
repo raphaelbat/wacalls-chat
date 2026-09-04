@@ -25,7 +25,15 @@
     "openMenu": "Open menu",
     "cartRecovery": "RecuperaPay",
     "features": "Features",
-    "help": "Help"
+    "help": "Help",
+    "whitelabel": "White label",
+    "emailSettings": "Email / SMTP",
+    "profile": "Profile",
+    "userSettings": "Settings",
+    "companies": "Companies",
+    "api": "API",
+    "principal": "Main",
+    "apps": "Apps"
   },
   "header": {
     "openDialer": "Open dialer",
@@ -187,7 +195,8 @@
       "deleteTitle": "Delete instance?",
       "deleteDescription": "{{name}} will be disconnected and removed.",
       "connectedSince": "Connected since {{date}} {{time}}",
-      "restartingToast": "Restarting instance…"
+      "restartingToast": "Restarting instance…",
+      "openHealth": "Account health check"
     },
     "campaigns": {
       "breadcrumb": "Campaigns",
@@ -420,23 +429,17 @@
     },
     "tags": {
       "title": "Tags",
-      "subtitle": "Create tags to classify tickets, contacts and conversations.",
-      "nameLabel": "Tag name",
-      "namePh": "Ex: VIP, Lead, Post-sale",
-      "register": "Register",
-      "newTag": "New tag",
-      "alreadyExists": "already exists",
-      "useAsBase": "Use this tag as base",
-      "duplicateChoose": "already exists — choose another name.",
-      "duplicateToast": "A tag called \"{{name}}\" already exists.",
-      "createdToast": "Tag created",
-      "empty": "No tags registered yet.",
-      "colCor": "Color",
-      "colName": "Name",
-      "colPreview": "Preview",
-      "colActions": "Actions",
-      "deleteTitle": "Delete tag?",
-      "deleteDescription": "Tag \"{{name}}\" will be removed."
+      "subtitle": "Colored labels for conversations. Tags created here show up in the chat and in campaigns.",
+      "name": "Tag name",
+      "placeholder": "e.g. Quote, VIP, No reply",
+      "create": "Create tag",
+      "color": "Color",
+      "created": "Tag created",
+      "deleted": "Tag deleted",
+      "duplicate": "A tag with that name already exists.",
+      "empty": "No tags yet. Create the first one above.",
+      "confirmTitle": "Delete this tag?",
+      "confirmBody": "It is removed from every conversation it marked. The conversations stay."
     },
     "settings": {
       "noAccess": "Restricted access"

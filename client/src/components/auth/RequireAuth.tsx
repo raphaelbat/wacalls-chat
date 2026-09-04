@@ -22,16 +22,34 @@ export const RequireAuth = ({ children, adminOnly = false }: { children: ReactNo
   // respostas 401) como fallback.
   useEffect(() => {
     if (!user) return;
-    const handleInvalidated = () => {
-      toast.error("Sua sessão foi encerrada porque você entrou em outro navegador.");
+
+    // Uma sessão derrubada gera 401 em TODAS as requisições que estavam no ar
+    // (chats, licença, SSE, permissões...). Sem esta trava, cada uma abria um
+    // aviso, e o cliente via a mesma frase empilhada quatro, cinco vezes.
+    let jaAvisou = false;
+    const encerrar = (motivo: "outro-acesso" | "expirou") => {
+      if (jaAvisou) return;
+      jaAvisou = true;
+      toast.error(
+        motivo === "outro-acesso"
+          ? "Sua sessão foi encerrada porque esta conta entrou em outro navegador ou aparelho."
+          : "Sua sessão expirou. Entre novamente.",
+        { id: "sessao-encerrada" },
+      );
       clearAuthClientState();
       useAuth.setState({ user: null });
       nav("/login", { replace: true });
     };
+
+    // 401 solto só prova que o token não vale mais — pode ser expiração,
+    // servidor reiniciado ou cookie perdido. Só o evento do servidor sabe
+    // dizer que foi outro acesso.
+    const handleInvalidated = () => encerrar("expirou");
+
     window.addEventListener("auth:invalidated", handleInvalidated);
     const es = new EventSource("/api/auth/stream", { withCredentials: true });
     es.addEventListener("revoked", () => {
-      handleInvalidated();
+      encerrar("outro-acesso");
       es.close();
     });
     es.onerror = () => {

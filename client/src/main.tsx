@@ -11,6 +11,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import ContactsPage from "@/pages/ContactsPage";
 import QueuesPage from "@/pages/QueuesPage";
 import KanbanPage from "@/pages/KanbanPage";
+import TagsPage from "@/pages/TagsPage";
 import FlowsPage from "@/pages/FlowsPage";
 import CampaignsPage from "@/pages/CampaignsPage";
 import FlowBuilderPage from "@/pages/FlowBuilderPage";
@@ -53,6 +54,7 @@ const Root = () => {
               <Route path="/contacts" element={<RequireAuth><ContactsPage /></RequireAuth>} />
               <Route path="/queues" element={<RequireAuth><QueuesPage /></RequireAuth>} />
               <Route path="/kanban" element={<RequireAuth><KanbanPage /></RequireAuth>} />
+              <Route path="/tags" element={<RequireAuth><TagsPage /></RequireAuth>} />
               <Route path="/flows" element={<RequireAuth><FlowsPage /></RequireAuth>} />
               <Route path="/campaigns" element={<RequireAuth><CampaignsPage /></RequireAuth>} />
               <Route path="/flows/:id" element={<RequireAuth><FlowBuilderPage /></RequireAuth>} />

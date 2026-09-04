@@ -49,6 +49,11 @@ type CampaignRow struct {
 	// Aquecimento: número novo começa devagar e vai soltando ao longo dos dias.
 	Warmup bool `json:"warmup"`
 
+	// Agendamento: epoch em segundos. 0 = começa assim que for iniciada.
+	// Antes disso a campanha fica em "running" mas sem disparar nada — é o
+	// mesmo estado de quem está fora da janela de horário.
+	StartAt int64 `json:"startAt"`
+
 	CreatedAt  int64  `json:"createdAt"`
 	UpdatedAt  int64  `json:"updatedAt"`
 	StartedAt  int64  `json:"startedAt"`
@@ -98,6 +103,7 @@ func newCampaignStore(ctx context.Context, db *sql.DB) (*campaignStore, error) {
 			window_end       INTEGER NOT NULL DEFAULT 20,
 			weekdays         TEXT NOT NULL DEFAULT '1,2,3,4,5,6',
 			warmup           INTEGER NOT NULL DEFAULT 1,
+			start_at         INTEGER NOT NULL DEFAULT 0,
 			created_at       INTEGER NOT NULL,
 			updated_at       INTEGER NOT NULL,
 			started_at       INTEGER NOT NULL DEFAULT 0,
@@ -137,6 +143,8 @@ func newCampaignStore(ctx context.Context, db *sql.DB) (*campaignStore, error) {
 			return nil, err
 		}
 	}
+	// Instalacao que ja existia nao tem a coluna do agendamento.
+	_, _ = db.ExecContext(ctx, `ALTER TABLE campaigns ADD COLUMN start_at INTEGER NOT NULL DEFAULT 0`)
 	return &campaignStore{db: db}, nil
 }
 
@@ -150,7 +158,7 @@ var errCampanhaNaoEncontrada = errors.New("campanha não encontrada")
 
 const colunasCampanha = `id, COALESCE(owner_id,''), name, status, text, media_url, media_kind, filename,
 	session_ids, min_interval_sec, max_interval_sec, per_hour, per_day,
-	window_start, window_end, weekdays, warmup, created_at, updated_at,
+	window_start, window_end, weekdays, warmup, COALESCE(start_at,0), created_at, updated_at,
 	started_at, finished_at, COALESCE(last_error,'')`
 
 func lerCampanha(sc interface{ Scan(...any) error }) (CampaignRow, error) {
@@ -158,7 +166,7 @@ func lerCampanha(sc interface{ Scan(...any) error }) (CampaignRow, error) {
 	var warmup int
 	err := sc.Scan(&c.ID, &c.OwnerID, &c.Name, &c.Status, &c.Text, &c.MediaURL, &c.MediaKind, &c.Filename,
 		&c.SessionIDs, &c.MinIntervalSec, &c.MaxIntervalSec, &c.PerHour, &c.PerDay,
-		&c.WindowStart, &c.WindowEnd, &c.Weekdays, &warmup, &c.CreatedAt, &c.UpdatedAt,
+		&c.WindowStart, &c.WindowEnd, &c.Weekdays, &warmup, &c.StartAt, &c.CreatedAt, &c.UpdatedAt,
 		&c.StartedAt, &c.FinishedAt, &c.LastError)
 	c.Warmup = warmup == 1
 	return c, err
@@ -233,11 +241,11 @@ func (s *campaignStore) Create(ctx context.Context, c *CampaignRow) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO campaigns
 		(id, owner_id, name, status, text, media_url, media_kind, filename, session_ids,
 		 min_interval_sec, max_interval_sec, per_hour, per_day, window_start, window_end,
-		 weekdays, warmup, created_at, updated_at, started_at, finished_at, last_error)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,0,'')`,
+		 weekdays, warmup, start_at, created_at, updated_at, started_at, finished_at, last_error)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,0,'')`,
 		c.ID, c.OwnerID, c.Name, c.Status, c.Text, c.MediaURL, c.MediaKind, c.Filename, c.SessionIDs,
 		c.MinIntervalSec, c.MaxIntervalSec, c.PerHour, c.PerDay, c.WindowStart, c.WindowEnd,
-		c.Weekdays, warmup, c.CreatedAt, c.UpdatedAt)
+		c.Weekdays, warmup, c.StartAt, c.CreatedAt, c.UpdatedAt)
 	return err
 }
 
@@ -250,11 +258,11 @@ func (s *campaignStore) Update(ctx context.Context, c *CampaignRow) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE campaigns SET
 		name=?, status=?, text=?, media_url=?, media_kind=?, filename=?, session_ids=?,
 		min_interval_sec=?, max_interval_sec=?, per_hour=?, per_day=?, window_start=?, window_end=?,
-		weekdays=?, warmup=?, updated_at=?, started_at=?, finished_at=?, last_error=?
+		weekdays=?, warmup=?, start_at=?, updated_at=?, started_at=?, finished_at=?, last_error=?
 		WHERE id=?`,
 		c.Name, c.Status, c.Text, c.MediaURL, c.MediaKind, c.Filename, c.SessionIDs,
 		c.MinIntervalSec, c.MaxIntervalSec, c.PerHour, c.PerDay, c.WindowStart, c.WindowEnd,
-		c.Weekdays, warmup, c.UpdatedAt, c.StartedAt, c.FinishedAt, c.LastError, c.ID)
+		c.Weekdays, warmup, c.StartAt, c.UpdatedAt, c.StartedAt, c.FinishedAt, c.LastError, c.ID)
 	return err
 }
 

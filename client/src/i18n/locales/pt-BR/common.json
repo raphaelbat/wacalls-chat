@@ -25,7 +25,15 @@
     "openMenu": "Abrir menu",
     "cartRecovery": "RecuperaPay",
     "features": "Funcionalidades",
-    "help": "Ajuda"
+    "help": "Ajuda",
+    "whitelabel": "Whitelabel",
+    "emailSettings": "E-mail / SMTP",
+    "profile": "Perfil",
+    "userSettings": "Configurações",
+    "companies": "Empresas",
+    "api": "API",
+    "principal": "Principal",
+    "apps": "Aplicações"
   },
   "header": {
     "openDialer": "Abrir discador",
@@ -187,7 +195,8 @@
       "deleteTitle": "Excluir instância?",
       "deleteDescription": "{{name}} será desconectada e removida.",
       "connectedSince": "Conectado desde {{date}} {{time}}",
-      "restartingToast": "Reiniciando instância…"
+      "restartingToast": "Reiniciando instância…",
+      "openHealth": "Diagnóstico da conta"
     },
     "campaigns": {
       "breadcrumb": "Campanhas",
@@ -419,24 +428,18 @@
       "updatedToast": "Fila atualizada"
     },
     "tags": {
-      "title": "Etiquetas",
-      "subtitle": "Crie etiquetas para classificar atendimentos, contatos e conversas.",
-      "nameLabel": "Nome da tag",
-      "namePh": "Ex: VIP, Lead, Pós-venda",
-      "register": "Cadastrar",
-      "newTag": "Nova tag",
-      "alreadyExists": "já existe",
-      "useAsBase": "Usar esta tag como base",
-      "duplicateChoose": "já existe — escolha outro nome.",
-      "duplicateToast": "Já existe uma tag chamada \"{{name}}\".",
-      "createdToast": "Tag criada",
-      "empty": "Nenhuma tag cadastrada ainda.",
-      "colCor": "Cor",
-      "colName": "Nome",
-      "colPreview": "Preview",
-      "colActions": "Ações",
-      "deleteTitle": "Excluir tag?",
-      "deleteDescription": "A tag \"{{name}}\" será removida."
+      "title": "Tags",
+      "subtitle": "Etiquetas coloridas para marcar conversas. As tags criadas aqui aparecem no atendimento e nas campanhas.",
+      "name": "Nome da tag",
+      "placeholder": "Ex.: Orçamento, VIP, Sem retorno",
+      "create": "Criar tag",
+      "color": "Cor",
+      "created": "Tag criada",
+      "deleted": "Tag apagada",
+      "duplicate": "Já existe uma tag com esse nome.",
+      "empty": "Nenhuma tag ainda. Crie a primeira acima.",
+      "confirmTitle": "Apagar esta tag?",
+      "confirmBody": "Ela sai de todas as conversas que estavam marcadas com ela. As conversas continuam."
     },
     "settings": {
       "noAccess": "Acesso restrito"

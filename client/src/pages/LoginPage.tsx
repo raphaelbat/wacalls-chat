@@ -42,6 +42,18 @@ export const LoginPage = () => {
 
   if (user) return <Navigate to="/chats" replace />;
 
+  // Enquanto o servidor nao diz se ja existe sessao, nao mostrar o formulario:
+  // abrir a mesma URL em outra aba tem que reaproveitar o acesso que ja existe,
+  // em vez de piscar um login que a pessoa preenche por reflexo — era assim que
+  // a segunda aba derrubava a primeira.
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;

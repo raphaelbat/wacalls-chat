@@ -269,16 +269,10 @@ export const NODE_SPECS: NodeSpec[] = [
     defaults: { url: "", method: "POST", body: "", authHeader: "", responseVariable: "n8n" },
     outputs: SAIDA_UNICA,
   },
-  {
-    type: "chat_ai_agent",
-    group: "integracoes",
-    label: "Agente de IA",
-    hint: "Entrega a conversa para um agente de IA",
-    icon: "Bot",
-    defaults: { agentId: "" },
-    outputs: SAIDA_UNICA,
-    placeholder: "O executor registra a passagem, mas o agente de IA ainda não está ligado.",
-  },
+  // O bloco "Agente de IA" saiu da paleta: o executor só registrava a passagem,
+  // sem agente nenhum atrás. Prometer na tela o que o sistema não faz é pior do
+  // que não ter o bloco. O tipo continua reconhecido (types/flow.ts, executor e
+  // simulador) para não quebrar fluxo já salvo com ele.
 ];
 
 export const SPEC_BY_TYPE: Record<string, NodeSpec> = Object.fromEntries(

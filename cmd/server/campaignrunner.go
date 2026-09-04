@@ -210,6 +210,12 @@ func (r *campaignRunner) passo(ctx context.Context, c CampaignRow) {
 		return
 	}
 
+	// Agendada para depois: fica parada, sem gastar teto nem acordar numero.
+	if esperando, falta := aguardandoAgendamento(c, agora); esperando {
+		r.adiar(c.ID, falta)
+		return
+	}
+
 	if !dentroDaJanela(agora, c.WindowStart, c.WindowEnd, c.Weekdays) {
 		// Fora da janela a campanha dorme; volta sozinha no horário.
 		r.adiar(c.ID, 5*time.Minute)
@@ -254,6 +260,26 @@ func (r *campaignRunner) passo(ctx context.Context, c CampaignRow) {
 	r.ultimoNumero[c.ID] = sessionID
 	r.mu.Unlock()
 	r.adiar(c.ID, intervaloAleatorio(c.MinIntervalSec, c.MaxIntervalSec))
+}
+
+// aguardandoAgendamento diz se a campanha ainda nao chegou na hora marcada, e
+// de quanto em quanto tempo vale a pena olhar de novo. O teto de 5 minutos
+// existe para o agendamento longo nao prender o disparador dormindo: se alguem
+// mudar a data no meio, a campanha reage em minutos, nao em horas.
+func aguardandoAgendamento(c CampaignRow, agora time.Time) (bool, time.Duration) {
+	if c.StartAt <= 0 || agora.Unix() >= c.StartAt {
+		return false, 0
+	}
+	// Conta a partir do "agora" recebido, nao do relogio global: assim a regra
+	// e testavel e nao muda de resposta no meio da conferencia.
+	falta := time.Unix(c.StartAt, 0).Sub(agora)
+	if falta > 5*time.Minute {
+		falta = 5 * time.Minute
+	}
+	if falta < time.Second {
+		falta = time.Second
+	}
+	return true, falta
 }
 
 func (r *campaignRunner) adiar(campaignID string, d time.Duration) {

@@ -129,6 +129,7 @@ const AppShellInner = ({ children }: { children: ReactNode }) => {
     { to: "/campaigns", icon: Megaphone, label: t("nav.campaigns", { defaultValue: "Campanhas" }), perm: "chats" },
     { to: "/connections", icon: Wifi, label: t("nav.connections", { defaultValue: "Conexões" }), perm: "connections" },
     { to: "/reports", icon: BarChart3, label: t("nav.reports", { defaultValue: "Relatórios" }), perm: "chats" },
+    { to: "/tags", icon: Tag, label: t("nav.tags", { defaultValue: "Tags" }), perm: "chats" },
     { to: "/features", icon: Info, label: t("nav.features", { defaultValue: "Funcionalidades" }), perm: "chats" },
     { to: "/help", icon: HeartHandshake, label: t("nav.help", { defaultValue: "Ajuda" }), perm: "chats" },
   ];

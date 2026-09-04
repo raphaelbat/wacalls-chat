@@ -25,7 +25,15 @@
     "openMenu": "Abrir menú",
     "cartRecovery": "RecuperaPay",
     "features": "Funcionalidades",
-    "help": "Ayuda"
+    "help": "Ayuda",
+    "whitelabel": "Marca blanca",
+    "emailSettings": "Correo / SMTP",
+    "profile": "Perfil",
+    "userSettings": "Configuración",
+    "companies": "Empresas",
+    "api": "API",
+    "principal": "Principal",
+    "apps": "Aplicaciones"
   },
   "header": {
     "openDialer": "Abrir marcador",
@@ -169,8 +177,8 @@
       },
       "kpiHints": {
         "thisWeek": "+{{count}} esta semana",
-        "answeredPct": "{{pct}}% atendidas",
-        "missedPct": "{{pct}}% perdidas",
+        "answeredPct": "{{pct}}% de las llamadas recibidas",
+        "missedPct": "{{pct}}% de las llamadas recibidas",
         "ofTotal": "{{pct}}% del total",
         "pending": "{{count}} pendientes",
         "perCall": "por llamada"
@@ -187,7 +195,8 @@
       "deleteTitle": "¿Eliminar instancia?",
       "deleteDescription": "{{name}} será desconectada y eliminada.",
       "connectedSince": "Conectado desde {{date}} {{time}}",
-      "restartingToast": "Reiniciando instancia…"
+      "restartingToast": "Reiniciando instancia…",
+      "openHealth": "Diagnóstico de la cuenta"
     },
     "campaigns": {
       "breadcrumb": "Campañas",
@@ -204,7 +213,7 @@
       "kpis": {
         "campaigns": "Campañas",
         "calls": "Llamadas",
-        "answered": "Atendidas",
+        "answered": "ATENDIDAS",
         "noAnswer": "Sin respuesta",
         "failed": "Fallidas",
         "running": "En curso"
@@ -213,7 +222,7 @@
         "noneYet": "Sin campañas aún",
         "totalCount": "{{count}} en total",
         "noCalls": "Sin llamadas aún",
-        "callsCount": "{{count}} disparadas",
+        "callsCount": "{{count}} realizadas",
         "noFail": "Sin fallos",
         "failCount": "{{count}} fallaron",
         "quiet": "Todo tranquilo",
@@ -284,7 +293,7 @@
       "connectionLabel": "Conexión",
       "connectionPlaceholder": "Seleccione una conexión",
       "copyJid": "Copiar JID",
-      "copyPhone": "Copiar número",
+      "copyPhone": "Copiar teléfono",
       "create": "Crear",
       "createdToast": "Contacto creado",
       "deleteDescription": "{{name}} será eliminado junto con el historial de la conversación.",
@@ -306,11 +315,11 @@
       "jidLabel": "Identificador del sistema (JID / LID)",
       "newDialogTitle": "Nuevo contacto",
       "noneFound": "Ningún contacto encontrado",
-      "phoneCopiedToast": "Número copiado",
+      "phoneCopiedToast": "Teléfono copiado",
       "phoneWithDdiLabel": "Teléfono (con código de país)",
       "photoHint": "PNG, JPG o WebP. Hasta 2 MB.",
       "realPhoneHint": "Teléfono mostrado en el marcador y usado para llamadas.",
-      "realPhoneLabel": "Número real",
+      "realPhoneLabel": "Teléfono real",
       "remove": "Eliminar",
       "removePhoto": "Eliminar",
       "removedToast": "Contacto eliminado",
@@ -353,7 +362,7 @@
       "messages": "Mensajes",
       "messagesPerDay": "Mensajes por día",
       "missed": "Perdidas",
-      "missedPctHint": "{{pct}}% perdidas",
+      "missedPctHint": "{{pct}}% de las llamadas recibidas",
       "noRecordings": "Ninguna grabación en el período. Active la opción anterior para grabar las próximas llamadas.",
       "other": "Otras",
       "outVsIn": "Salientes vs. entrantes",
@@ -420,23 +429,17 @@
     },
     "tags": {
       "title": "Etiquetas",
-      "subtitle": "Crea etiquetas para clasificar atenciones, contactos y conversaciones.",
-      "nameLabel": "Nombre de la etiqueta",
-      "namePh": "Ej: VIP, Lead, Postventa",
-      "register": "Registrar",
-      "newTag": "Nueva etiqueta",
-      "alreadyExists": "ya existe",
-      "useAsBase": "Usar esta etiqueta como base",
-      "duplicateChoose": "ya existe — elige otro nombre.",
-      "duplicateToast": "Ya existe una etiqueta llamada \"{{name}}\".",
-      "createdToast": "Etiqueta creada",
-      "empty": "Ninguna etiqueta registrada aún.",
-      "colCor": "Color",
-      "colName": "Nombre",
-      "colPreview": "Vista previa",
-      "colActions": "Acciones",
-      "deleteTitle": "¿Eliminar etiqueta?",
-      "deleteDescription": "La etiqueta \"{{name}}\" será eliminada."
+      "subtitle": "Etiquetas de colores para marcar conversaciones. Las creadas aquí aparecen en la atención y en las campañas.",
+      "name": "Nombre de la etiqueta",
+      "placeholder": "Ej.: Presupuesto, VIP, Sin respuesta",
+      "create": "Crear etiqueta",
+      "color": "Color",
+      "created": "Etiqueta creada",
+      "deleted": "Etiqueta eliminada",
+      "duplicate": "Ya existe una etiqueta con ese nombre.",
+      "empty": "Aún no hay etiquetas. Cree la primera arriba.",
+      "confirmTitle": "¿Eliminar esta etiqueta?",
+      "confirmBody": "Sale de todas las conversaciones que marcaba. Las conversaciones siguen."
     },
     "settings": {
       "noAccess": "Acceso restringido"

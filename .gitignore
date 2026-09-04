@@ -44,3 +44,7 @@ Thumbs.db
 /windows/
 /licencas/
 licenca.json
+
+# binario que o `go build ./cmd/server` deixa na raiz
+/server
+/wacalls

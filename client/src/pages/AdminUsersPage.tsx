@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { AcessosAbertos } from "@/components/domain/settings/AcessosAbertos";
 import {
   Dialog,
   DialogContent,
@@ -281,6 +282,7 @@ export const AdminUsersPage = ({ embedded = false }: { embedded?: boolean } = {}
             </span>
           )}
         </div>
+        {canManage && <AcessosAbertos />}
         {canManage && (
           <div className="rounded-lg border">
             <button

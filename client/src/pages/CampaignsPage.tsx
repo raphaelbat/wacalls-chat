@@ -56,6 +56,24 @@ const ROTULO_STATUS: Record<string, string> = {
   finished: "concluída",
 };
 
+// Agendamento. O <input type="datetime-local"> fala em hora local, o servidor
+// guarda epoch — a conversao mora aqui para nao repetir fuso na tela.
+const paraCampoLocal = (epoch: number) => {
+  if (!epoch) return "";
+  const d = new Date(epoch * 1000);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
+const doCampoLocal = (valor: string) => {
+  if (!valor) return 0;
+  const t = new Date(valor).getTime();
+  return Number.isNaN(t) ? 0 : Math.floor(t / 1000);
+};
+
+const dataHoraBR = (epoch: number) =>
+  new Date(epoch * 1000).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+
 const COR_STATUS: Record<string, string> = {
   draft: "bg-muted-foreground/40",
   running: "bg-emerald-500",
@@ -88,6 +106,7 @@ const Editor = ({ id, onVoltar }: { id: string; onVoltar: () => void }) => {
   const [prog, setProg] = useState<CampaignProgress>({ total: 0, pending: 0, sent: 0, failed: 0, skipped: 0 });
   const [alvos, setAlvos] = useState<CampaignTarget[]>([]);
   const [ocupado, setOcupado] = useState(false);
+  const [confirmarExclusao, setConfirmarExclusao] = useState(false);
   const [limpando, setLimpando] = useState(false);
   const arquivoRef = useRef<HTMLInputElement>(null);
   const sessions = useSessions((s) => s.sessions);
@@ -189,6 +208,20 @@ const Editor = ({ id, onVoltar }: { id: string; onVoltar: () => void }) => {
     }
   };
 
+  const excluir = async () => {
+    try {
+      await deleteCampaign(c.id);
+      setConfirmarExclusao(false);
+      toast.success("Campanha excluída");
+      onVoltar();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  // Agendada = tem hora marcada no futuro. Muda o rotulo do botao e o selo de
+  // status, para ninguem achar que clicou em Disparar e nada aconteceu.
+  const agendada = (c.startAt ?? 0) > Math.floor(Date.now() / 1000);
   const tempo = estimativa(prog.pending, c, conectados.length);
   const semMensagem = !c.text.trim() && !c.mediaUrl;
   const falhas = alvos.filter((a) => a.status === "failed");
@@ -210,8 +243,11 @@ const Editor = ({ id, onVoltar }: { id: string; onVoltar: () => void }) => {
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className={`h-2 w-2 rounded-full ${COR_STATUS[c.status]}`} />
           {ROTULO_STATUS[c.status]}
+          {agendada && (
+            <span className="text-amber-600 dark:text-amber-400">· agendada para {dataHoraBR(c.startAt)}</span>
+          )}
         </span>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap gap-2">
           {rodando ? (
             <Button variant="outline" size="sm" onClick={pausar}>
               <Pause className="mr-1.5 h-4 w-4" />
@@ -220,11 +256,27 @@ const Editor = ({ id, onVoltar }: { id: string; onVoltar: () => void }) => {
           ) : (
             <Button size="sm" onClick={disparar} disabled={ocupado || semMensagem || prog.pending === 0}>
               {ocupado ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Play className="mr-1.5 h-4 w-4" />}
-              {c.status === "paused" ? "Continuar" : "Disparar"}
+              {c.status === "paused" ? "Continuar" : agendada ? "Agendar disparo" : "Disparar"}
             </Button>
           )}
+          {/* Excluir tambem aqui: antes so existia na lista, e quem estava
+              editando tinha que voltar so para apagar. */}
+          <Button variant="outline" size="sm" className="text-destructive" onClick={() => setConfirmarExclusao(true)}>
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            Excluir
+          </Button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmarExclusao}
+        onOpenChange={setConfirmarExclusao}
+        title="Excluir campanha"
+        description={`"${c.name}" e a lista de contatos dela serão removidas.`}
+        confirmLabel="Excluir"
+        destructive
+        onConfirm={excluir}
+      />
 
       {c.lastError ? (
         <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
@@ -398,6 +450,40 @@ const Editor = ({ id, onVoltar }: { id: string; onVoltar: () => void }) => {
                 className="h-9"
               />
               <span className="whitespace-nowrap text-xs text-muted-foreground">/dia</span>
+            </div>
+          </Campo>
+
+          <Campo
+            label="Começar em"
+            hint={
+              (c.startAt ?? 0) > 0
+                ? `A campanha só dispara a partir de ${dataHoraBR(c.startAt)} — e ainda assim dentro do horário permitido.`
+                : "Vazio: começa assim que você clicar em Disparar."
+            }
+          >
+            <div className="flex items-center gap-2">
+              <Input
+                type="datetime-local"
+                value={paraCampoLocal(c.startAt ?? 0)}
+                onChange={(e) => set({ startAt: doCampoLocal(e.target.value) })}
+                onBlur={() => void salvar().catch(() => {})}
+                disabled={rodando}
+                className="h-9"
+              />
+              {(c.startAt ?? 0) > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={rodando}
+                  className="shrink-0"
+                  onClick={() => {
+                    set({ startAt: 0 });
+                    void salvar().catch(() => {});
+                  }}
+                >
+                  Limpar
+                </Button>
+              )}
             </div>
           </Campo>
 
