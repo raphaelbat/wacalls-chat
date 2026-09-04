@@ -1,0 +1,46 @@
+/docs
+/wacalls-server.exe
+/wacalls.exe
+run-mlow.ps1
+*.exe
+# o instalador do Windows e distribuido junto com o repositorio
+!windows/WaCalls-Setup.exe
+*.test
+*.out
+/dist/
+/bin/
+wacalls.db
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+/auth/
+/data/
+client/node_modules/
+client/dist/
+client/.vite/
+client/*.tsbuildinfo
+node_modules/
+npm-debug.log*
+yarn-error.log*
+/vendor/
+coverage.*
+*.prof
+*.pcap
+*.pcapng
+*.keys
+nc-qr.txt
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+!native/
+!native/*.dll
+
+# A versao local (instalador Windows + servidor de licencas) e distribuida
+# fora deste repositorio publico.
+/windows/
+/licencas/
+licenca.json

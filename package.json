@@ -1,0 +1,21 @@
+{
+  "name": "wacalls",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "setup": "npm --prefix client install && go mod download",
+    "dev": "npm --prefix client run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "go run ./cmd/server",
+    "build": "npm --prefix client install && npm --prefix client run build",
+    "build:dev": "npm --prefix client install && npm --prefix client run build:dev",
+    "start": "go run ./cmd/server"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4",
+    "concurrently": "^9.1.0",
+    "react": "^19",
+    "react-dom": "^19",
+    "vite": "^7"
+  }
+}
